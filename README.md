@@ -18,9 +18,3 @@ The app is intended as a **didactic model** and not as a weather or drying forec
 pip install -r requirements.txt
 streamlit run app.py
 ```
-
-## Streamlit Community Cloud
-
-1. Publish the repository on GitHub.
-2. Select `app.py` as the main file in Streamlit Community Cloud.
-3. Deploy.
