@@ -24,15 +24,95 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("Futtertrocknung: Luftfeuchte und Sättigungsdefizit")
+head_left, head_right = st.columns([4.2, 1.3])
 
-st.markdown(
-    """
-Diese App zeigt, wie viel Wasserdampf Luft bei einer gegebenen Temperatur aufnehmen kann
-und wie gross das **Sättigungsdefizit** ist. Zusätzlich wird ein vereinfachter
-Trocknungsverlauf von Futter berechnet.
-"""
-)
+with head_left:
+    st.title("Futtertrocknung")
+    st.caption("Physikalische Zusammenhänge von Luftfeuchte, Sättigungsdefizit, Tau und Trocknung.")
+
+with head_right:
+    with st.popover("ℹ️ Theorie & Annahmen", use_container_width=True):
+        st.subheader("Luftzustand")
+        st.latex(r"e_s(T)=6.112\cdot \exp\left(\frac{17.62\,T}{243.12+T}\right)")
+        st.latex(r"\rho_v = 216.7\cdot\frac{e}{T+273.15}")
+        st.latex(r"\Delta\rho = \rho_{v,\mathrm{sat}}-\rho_v")
+        st.write(
+            "Tau entsteht, wenn die Futteroberfläche den Taupunkt der angrenzenden Luft "
+            "erreicht oder unterschreitet. Die gesamte Umgebungsluft muss dabei nicht "
+            "auf den Taupunkt abkühlen."
+        )
+
+        st.divider()
+        st.subheader("Sättigungsdefizit-Summe")
+        st.latex(r"\mathrm{SDS}=\int SD(t)\,dt")
+        st.write("Bei konstanten Bedingungen:")
+        st.latex(r"\mathrm{SDS}=SD\cdot \Delta t")
+        st.write(
+            "Für die Zeitberechnung wird angenommen, dass Temperatur und relative "
+            "Luftfeuchtigkeit konstant bleiben."
+        )
+        st.write(
+            "Die Zielwerte 160 und 200 g/m³·h entsprechen historischen Schweizer "
+            "Referenzwerten bis ungefähr zum Belüftungsheu-Stadium; 180 g/m³·h ist "
+            "ein Zwischenwert für die Lehre."
+        )
+
+        st.divider()
+        st.subheader("Vereinfachtes Trocknungsmodell")
+        st.latex(r"\lambda = k_0\frac{SD}{10\ \mathrm{g\,m^{-3}}}")
+        st.latex(r"M(t)=M_0\,e^{-\lambda t}")
+        st.latex(
+            r"M(t)=M_0\exp\left[-k_0\frac{\mathrm{SDS}(t)}"
+            r"{10\ \mathrm{g\,m^{-3}}}\right]"
+        )
+        st.write(
+            "M ist das Verhältnis Wassermasse zu Trockenmasse. k₀ ist hier ein "
+            "didaktischer Effizienzfaktor für Strahlung, Wind, Schwadstruktur und "
+            "technische Belüftung. Die k₀-Werte sind keine universellen Stoffkonstanten."
+        )
+
+        st.divider()
+        st.subheader("Feldtrocknungsstufen")
+        field_conditions = pd.DataFrame(
+            [
+                {
+                    "Stufe": "Ungünstig",
+                    "Strahlung": "≈ 300 W/m²",
+                    "Wind": "≈ 0.5 m/s",
+                    "Ablage": "dichter Schwad",
+                    "Situation": "bewölkt, wenig Wind, feuchter Boden",
+                },
+                {
+                    "Stufe": "Normal",
+                    "Strahlung": "≈ 600 W/m²",
+                    "Wind": "≈ 2 m/s",
+                    "Ablage": "mittlere Ablage",
+                    "Situation": "trockener Sommertag",
+                },
+                {
+                    "Stufe": "Gut",
+                    "Strahlung": "≈ 800 W/m²",
+                    "Wind": "≈ 3 m/s",
+                    "Ablage": "breit und locker",
+                    "Situation": "sonnig, trocken, windig; z. B. exponierte Berglage",
+                },
+            ]
+        )
+        st.dataframe(field_conditions, use_container_width=True, hide_index=True)
+        st.caption(
+            "Orientierungswerte. Eine höhere Lage bedeutet nicht automatisch ein "
+            "grösseres Sättigungsdefizit. Günstig wirken dort häufig Strahlung, Wind "
+            "und die Erwärmung der Futteroberfläche."
+        )
+
+        st.divider()
+        st.subheader("Modellgrenzen")
+        st.write(
+            "Die App ist ein didaktisches Modell und keine Wetter- oder Trocknungsprognose. "
+            "Reale Verläufe werden zusätzlich durch wechselndes Wetter, Pflanzenart, "
+            "Bestandesstruktur, Bodenfeuchte und Bearbeitung beeinflusst."
+        )
+        st.caption("Grundlagen: Magnus-Formel; Agroscope / Schweizer Lehrunterlagen zur SDS.")
 
 # -----------------------------
 # Physikalische Funktionen
@@ -134,18 +214,6 @@ c5.metric("Futteroberfläche", f"{target_T:.1f} °C")
 c6.metric("rF an der Oberfläche", f"{target_rh:.0f} %")
 c7.metric("Kondensatpotenzial", f"{condensed_g_m3:.1f} g/m³")
 
-st.caption(
-    "Das Sättigungsdefizit ist hier als Differenz der absoluten Wasserdampfgehalte "
-    "ρᵥ,sat − ρᵥ in g/m³ definiert."
-)
-
-
-st.caption(
-    "Für Tau auf dem Futter ist nicht entscheidend, dass die gesamte Umgebungsluft "
-    "auf den Taupunkt abkühlt. Entscheidend ist, dass die Futteroberfläche den "
-    "Taupunkt der angrenzenden Luft erreicht oder unterschreitet."
-)
-
 # -----------------------------
 # Grafik 1: Sättigungskurve
 # -----------------------------
@@ -241,49 +309,17 @@ with fig1_col:
     st.plotly_chart(fig1, use_container_width=True)
 
 if target_T <= dew_point:
-    st.info(
-        f"Die Umgebungsluft hat **{T:.1f} °C** und **{rh:.0f} % rF**. "
-        f"Ihr Taupunkt liegt bei **{dew_point:.1f} °C**. "
-        f"Die Futteroberfläche ist mit **{target_T:.1f} °C** kälter als der Taupunkt. "
-        f"Die Luft direkt an der Oberfläche erreicht daher **100 % rF** und Tau kann entstehen. "
-        f"Das Kondensatpotenzial beträgt etwa **{condensed_g_m3:.1f} g/m³**."
+    st.success(
+        f"Tau möglich: Futteroberfläche {target_T:.1f} °C ≤ Taupunkt {dew_point:.1f} °C."
     )
 elif target_T < T:
-    st.info(
-        f"Die Umgebungsluft hat **{T:.1f} °C** und **{rh:.0f} % rF**. "
-        f"Ihr Taupunkt liegt bei **{dew_point:.1f} °C**. "
-        f"Die Futteroberfläche kühlt die angrenzende Luft auf **{target_T:.1f} °C** ab. "
-        f"Dort steigt die relative Feuchtigkeit auf etwa **{target_rh:.0f} %**, "
-        f"der Taupunkt wird aber noch nicht erreicht."
+    st.caption(
+        f"Kein Tau: An der Oberfläche steigt die rF auf etwa {target_rh:.0f} %, "
+        f"der Taupunkt ({dew_point:.1f} °C) wird aber nicht erreicht."
     )
 else:
-    st.info(
-        f"Die Futteroberfläche ist mit **{target_T:.1f} °C** nicht kälter als die Umgebungsluft "
-        f"(**{T:.1f} °C**). Durch nächtliche Oberflächenabkühlung ist unter diesen "
-        f"Einstellungen keine Tauentstehung zu erwarten."
-    )
-
-with st.expander("Formeln"):
-    st.latex(
-        r"e_s(T)=6.112\cdot \exp\left(\frac{17.62\,T}{243.12+T}\right)"
-    )
-    st.latex(
-        r"\rho_v = 216.7\cdot\frac{e}{T+273.15}"
-    )
-    st.latex(
-        r"e=\frac{\mathrm{rF}}{100}\,e_s"
-    )
-    st.latex(
-        r"\Delta\rho = \rho_{v,\mathrm{sat}}-\rho_v"
-    )
-    st.markdown(
-        """
-- T: Lufttemperatur in °C
-- eₛ: Sättigungsdampfdruck in hPa
-- e: aktueller Dampfdruck in hPa
-- ρᵥ: absolute Feuchte in g/m³
-- Δρ: Sättigungsdefizit in g/m³
-"""
+    st.caption(
+        "Die Futteroberfläche ist nicht kälter als die Umgebungsluft."
     )
 
 # -----------------------------
@@ -292,13 +328,7 @@ with st.expander("Formeln"):
 
 st.subheader("2. Sättigungsdefizit-Summe (SDS)")
 
-st.write("Die SDS beschreibt das über die Zeit aufsummierte Sättigungsdefizit.")
-
-st.latex(r"\mathrm{SDS}=\int SD(t)\,dt")
-
-st.write("Bei konstanten Bedingungen gilt vereinfacht:")
-
-st.latex(r"\mathrm{SDS}=SD\cdot \Delta t")
+st.caption("Aufsummiertes Trocknungspotenzial der Luft über die Zeit.")
 
 sds_presets = {
     "160 g/m³·h – Naturwiese, Referenz Belüftungsheu": 160.0,
@@ -335,33 +365,15 @@ if deficit > 1e-6:
         f"= {duration:.1f} h"
     )
 
-st.caption(
-    "Annahme für die Zeitberechnung: Temperatur und relative Luftfeuchtigkeit bleiben konstant. "
-    "Die Werte 160 und 200 g/m³·h stammen aus einem historischen Schweizer Feldversuch: "
-    "Bis zum Belüftungsheu-Stadium mit etwa 60 % TS benötigte Naturwiesenfutter rund 160, "
-    "Kunstwiesenfutter rund 200 SDS-Einheiten. 180 g/m³·h dient hier als Zwischenwert."
-)
-
-st.caption(
-    "Die SDS beschreibt nur das luftseitige Trocknungspotenzial. "
-    "Strahlung, Wind, Futtertemperatur und Schwadstruktur sind darin nicht enthalten. "
-    "Deshalb kann derselbe Trocknungsgrad unter günstigen Bedingungen bei kleinerer SDS erreicht werden."
-)
-
 st.divider()
 
 # -----------------------------
 # 3. Vereinfachter Trocknungsverlauf
 # -----------------------------
 
-st.subheader("3. Vereinfachter Trocknungsverlauf")
+st.subheader("3. Trocknungsverlauf")
 
-st.markdown(
-    """
-Der Trocknungsverlauf startet fest bei **15 % TS**. Das Modell verbindet die
-oben berechnete SDS mit der gewählten Trocknungsart.
-"""
-)
+st.caption("Start bei 15 % TS. Die Trocknungsart bestimmt, wie wirksam das Luftpotenzial genutzt wird.")
 
 initial_dm = 15.0
 
@@ -401,53 +413,7 @@ with ctrl2:
 
 k0 = drying_presets[drying_mode]["k"]
 
-st.caption(
-    f"**{drying_mode}:** {drying_presets[drying_mode]['description']} "
-    f"Der Faktor k₀ beschreibt vereinfacht, wie wirksam das vorhandene "
-    f"luftseitige Trocknungspotenzial genutzt wird. Die drei Feldstufen sind "
-    f"didaktisch so kalibriert, dass etwa 60 % TS bei ungefähr 200, 180 bzw. "
-    f"160 g/m³·h erreicht werden."
-)
-
-
-with st.expander("Was bedeuten die drei Feldtrocknungsstufen?", expanded=False):
-    field_conditions = pd.DataFrame(
-        [
-            {
-                "Stufe": "Ungünstig",
-                "Globalstrahlung*": "ca. 300 W/m²",
-                "Wind*": "ca. 0.5 m/s",
-                "Ablage*": "dichter Schwad, ~30 % Feldbedeckung",
-                "Boden": "eher feucht",
-                "Typische Situation": "bewölkt, wenig Luftbewegung, nach Niederschlag",
-            },
-            {
-                "Stufe": "Normal",
-                "Globalstrahlung*": "ca. 600 W/m²",
-                "Wind*": "ca. 2 m/s",
-                "Ablage*": "mittlere Ablage, ~60 % Feldbedeckung",
-                "Boden": "mittel",
-                "Typische Situation": "normaler trockener Sommertag",
-            },
-            {
-                "Stufe": "Gut",
-                "Globalstrahlung*": "ca. 800 W/m²",
-                "Wind*": "ca. 3 m/s",
-                "Ablage*": "breit und locker, ~80 % Feldbedeckung",
-                "Boden": "eher trocken",
-                "Typische Situation": "sonnig, trocken und windig; z. B. exponierte Berglage",
-            },
-        ]
-    )
-    st.dataframe(field_conditions, use_container_width=True, hide_index=True)
-
-    st.caption(
-        "* Orientierungswerte, keine festen Grenzwerte. "
-        "Eine höhere Lage bedeutet nicht automatisch eine bessere Trocknung. "
-        "Bei gleicher Lufttemperatur und relativer Feuchtigkeit ist das "
-        "Sättigungsdefizit praktisch gleich. Günstig können in Berglagen "
-        "stärkere Strahlung, mehr Wind und eine höhere Futteroberflächentemperatur sein."
-    )
+st.caption(f"{drying_presets[drying_mode]['description']}")
 
 # Wassergehalt auf Trockenbasis: M = m_W / m_TS
 m0_db = (100.0 - initial_dm) / initial_dm
@@ -533,52 +499,6 @@ e2.metric("40 % TS", "∞" if not np.isfinite(t40_theory) else f"{t40_theory:.1f
 e3.metric("60 % TS", "∞" if not np.isfinite(t60_theory) else f"{t60_theory:.1f} h")
 e4.metric("85 % TS", "∞" if not np.isfinite(t85_theory) else f"{t85_theory:.1f} h")
 
-st.caption(
-    "Die Zeiten sind theoretische Werte bei konstantem Sättigungsdefizit und "
-    "unveränderter Trocknungsart. Die Grafik wird deshalb unabhängig vom gewählten "
-    "SDS-Ziel bis mindestens 85 % TS weitergeführt."
-)
+st.caption("Theoretische Zeiten bei konstantem SD und unveränderter Trocknungsart.")
 
-st.caption(
-    f"Effektive Trocknungskonstante: λ = {lambda_eff:.3f} 1/h "
-    f"bei Δρ = {deficit:.1f} g/m³."
-)
 
-with st.expander("Trocknungsmodell"):
-    st.write("Die SDS bis zu einem Zeitpunkt t ist:")
-
-    st.latex(r"\mathrm{SDS}(t)=\int_0^t SD(\tau)\,d\tau")
-
-    st.write("Die vereinfachte Trocknungskonstante lautet:")
-
-    st.latex(r"\lambda = k_0\frac{SD}{10\ \mathrm{g\,m^{-3}}}")
-
-    st.write("Der Wassergehalt auf Trockenbasis nimmt im Modell exponentiell ab:")
-
-    st.latex(r"M(t)=M_0\,e^{-\lambda t}")
-
-    st.write("Bei konstantem SD kann der Zusammenhang direkt über die SDS geschrieben werden:")
-
-    st.latex(
-        r"M(t)=M_0\exp\left[-k_0\frac{\mathrm{SDS}(t)}"
-        r"{10\ \mathrm{g\,m^{-3}}}\right]"
-    )
-
-    st.markdown(
-        """
-M ist das Verhältnis Wassermasse zu Trockenmasse.
-
-- **SDS:** Trocknungspotenzial der Luft über die Zeit.
-- **k₀:** didaktischer Effizienzfaktor für Strahlung, Wind, Schwadstruktur und Belüftung.
-
-Die Feldwerte von k₀ sind keine Literaturkonstanten. Sie sind hier so kalibriert,
-dass das Modell die in der Vorlesung diskutierte Grössenordnung der SDS bis zum
-Belüftungsheu-Stadium nachvollziehbar abbildet.
-"""
-    )
-
-st.divider()
-st.caption(
-    "Sättigungsdampfdruck: Magnus-Formel. "
-    "Für die Lehre geeignet im üblichen meteorologischen Temperaturbereich."
-)
