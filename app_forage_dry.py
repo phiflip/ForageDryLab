@@ -381,15 +381,27 @@ TXT = {
 # Header and language selector
 # -----------------------------
 
-head_left, head_lang, head_right = st.columns([4.0, 1.1, 1.6])
+head_left, head_right = st.columns([3.6, 2.4])
 
-with head_lang:
-    lang = st.radio(
-        "Sprache / Langue",
-        options=["DE", "FR"],
-        horizontal=True,
-        label_visibility="visible",
+# Default language selector on the right, with enough width and without a clipped label
+with head_right:
+    st.markdown(
+        """
+        <div style="height: 0.35rem;"></div>
+        """,
+        unsafe_allow_html=True,
     )
+
+    control_lang, control_theory = st.columns([1.0, 1.4])
+
+    with control_lang:
+        st.caption("Sprache / Langue")
+        lang = st.radio(
+            "Sprache / Langue",
+            options=["DE", "FR"],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
 
 t = TXT[lang]
 
@@ -398,77 +410,84 @@ with head_left:
     st.caption(t["subtitle"])
 
 with head_right:
-    with st.popover(t["theory_button"], use_container_width=True):
-        st.subheader(t["air_state"])
-        st.latex(r"e_s(T)=6.112\cdot \exp\left(\frac{17.62\,T}{243.12+T}\right)")
-        st.latex(r"\rho_v = 216.7\cdot\frac{e}{T+273.15}")
-
-        if lang == "DE":
-            st.latex(r"SD = \rho_{v,\mathrm{sat}}-\rho_v")
-        else:
-            st.latex(r"DS = \rho_{v,\mathrm{sat}}-\rho_v")
-
-        st.write(t["dew_text"])
-
-        st.divider()
-
-        st.subheader(t["sds_title"])
-        if lang == "DE":
-            st.latex(r"\mathrm{SDS}=\int SD(t)\,dt")
-            st.write(t["constant_conditions"])
-            st.latex(r"\mathrm{SDS}=SD\cdot \Delta t")
-        else:
-            st.latex(r"\mathrm{SDS}=\int DS(t)\,dt")
-            st.write(t["constant_conditions"])
-            st.latex(r"\mathrm{SDS}=DS\cdot \Delta t")
-
-        st.write(t["sds_explanation"])
-        st.write(t["time_assumption"])
-        st.write(t["sds_refs"])
-
-        st.divider()
-
-        st.subheader(t["model_title"])
-
-        if lang == "DE":
-            st.latex(r"\lambda = k_0\frac{SD}{10\ \mathrm{g\,m^{-3}}}")
-        else:
-            st.latex(r"\lambda = k_0\frac{DS}{10\ \mathrm{g\,m^{-3}}}")
-
-        st.latex(r"M(t)=M_0\,e^{-\lambda t}")
-        st.latex(
-            r"M(t)=M_0\exp\left[-k_0\frac{\mathrm{SDS}(t)}"
-            r"{10\ \mathrm{g\,m^{-3}}}\right]"
+    with control_theory:
+        theory_button_label = (
+            "ℹ️ Theorie / Théorie"
+            if lang == "DE"
+            else "ℹ️ Théorie / Theorie"
         )
 
-        st.write(t["model_text"])
+        with st.popover(theory_button_label, use_container_width=True):
+            st.subheader(t["air_state"])
+            st.latex(r"e_s(T)=6.112\cdot \exp\left(\frac{17.62\,T}{243.12+T}\right)")
+            st.latex(r"\rho_v = 216.7\cdot\frac{e}{T+273.15}")
 
-        st.divider()
+            if lang == "DE":
+                st.latex(r"SD = \rho_{v,\mathrm{sat}}-\rho_v")
+            else:
+                st.latex(r"DS = \rho_{v,\mathrm{sat}}-\rho_v")
 
-        st.subheader(t["field_title"])
+            st.write(t["dew_text"])
 
-        rows = []
-        c = t["field_columns"]
-        for row in t["field_rows"]:
-            rows.append(
-                {
-                    c["level"]: row["level"],
-                    c["radiation"]: row["radiation"],
-                    c["wind"]: row["wind"],
-                    c["swath"]: row["swath"],
-                    c["situation"]: row["situation"],
-                }
+            st.divider()
+
+            st.subheader(t["sds_title"])
+            if lang == "DE":
+                st.latex(r"\mathrm{SDS}=\int SD(t)\,dt")
+                st.write(t["constant_conditions"])
+                st.latex(r"\mathrm{SDS}=SD\cdot \Delta t")
+            else:
+                st.latex(r"\mathrm{SDS}=\int DS(t)\,dt")
+                st.write(t["constant_conditions"])
+                st.latex(r"\mathrm{SDS}=DS\cdot \Delta t")
+
+            st.write(t["sds_explanation"])
+            st.write(t["time_assumption"])
+            st.write(t["sds_refs"])
+
+            st.divider()
+
+            st.subheader(t["model_title"])
+
+            if lang == "DE":
+                st.latex(r"\lambda = k_0\frac{SD}{10\ \mathrm{g\,m^{-3}}}")
+            else:
+                st.latex(r"\lambda = k_0\frac{DS}{10\ \mathrm{g\,m^{-3}}}")
+
+            st.latex(r"M(t)=M_0\,e^{-\lambda t}")
+            st.latex(
+                r"M(t)=M_0\exp\left[-k_0\frac{\mathrm{SDS}(t)}"
+                r"{10\ \mathrm{g\,m^{-3}}}\right]"
             )
 
-        field_conditions = pd.DataFrame(rows)
-        st.dataframe(field_conditions, use_container_width=True, hide_index=True)
-        st.caption(t["field_caption"])
+            st.write(t["model_text"])
 
-        st.divider()
+            st.divider()
 
-        st.subheader(t["limits_title"])
-        st.write(t["limits_text"])
-        st.caption(t["sources"])
+            st.subheader(t["field_title"])
+
+            rows = []
+            c = t["field_columns"]
+            for row in t["field_rows"]:
+                rows.append(
+                    {
+                        c["level"]: row["level"],
+                        c["radiation"]: row["radiation"],
+                        c["wind"]: row["wind"],
+                        c["swath"]: row["swath"],
+                        c["situation"]: row["situation"],
+                    }
+                )
+
+            field_conditions = pd.DataFrame(rows)
+            st.dataframe(field_conditions, use_container_width=True, hide_index=True)
+            st.caption(t["field_caption"])
+
+            st.divider()
+
+            st.subheader(t["limits_title"])
+            st.write(t["limits_text"])
+            st.caption(t["sources"])
 
 
 # -----------------------------
